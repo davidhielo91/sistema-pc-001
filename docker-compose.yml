@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: taller_pc
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/taller_pc
+      SESSION_SECRET: ${SESSION_SECRET:-cambiar-por-un-secreto-seguro-en-produccion}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@taller.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      ADMIN_NOMBRE: ${ADMIN_NOMBRE:-Administrador}
+      TALLER_NOMBRE: ${TALLER_NOMBRE:-Mi Taller}
+      TALLER_MONEDA: ${TALLER_MONEDA:-MXN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npx prisma db seed &&
+        node server.js
+      "
+
+volumes:
+  pgdata:
