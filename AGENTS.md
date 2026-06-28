@@ -73,7 +73,7 @@ El esquema de referencia completo está en `prisma/schema.prisma`. Resumen de en
 - **`Diagnostico`**: hallazgos, solucionPropuesta?, costoEstimado?, aprobado (null=pendiente), tecnicoId, ordenId.
 - **`HistorialEstado`** (v1.1): ordenId, estadoAnterior?, estadoNuevo, usuarioId, createdAt. Registro inmutable de cada transición de estado.
 - **`Pago`** (v1.1): ordenId, monto, metodo?, nota?, usuarioId, createdAt. Registro inmutable de cada cobro.
-- **`Ajustes`**: singleton (id=1). nombreTaller, moneda (ISO 4217), telefono?, direccion?, logoUrl?.
+- **`Ajustes`**: singleton (id=1). nombreTaller, moneda (ISO 4217), telefono?, direccion?, logoUrl?, codigoPaisWhatsapp?, mensajeWhatsappListo?.
 
 ### Notas del modelo
 - **La moneda es global del taller**, vive en `Ajustes.moneda`. No se elige por orden.
@@ -134,10 +134,10 @@ No hace falta un sistema de permisos granular. Basta con estos dos roles.
 - Sección 1: **Bitácora de estados** — `HistorialEstado`, timeline en el detalle de la orden.
 - Sección 2: **Pagos y abonos** — `Pago`, `EstadoPago`, formulario de abono, resumen costo/abonado/saldo, badge y filtro en el listado.
 
-**Pendiente (no implementar sin instrucción explícita):**
-- Sección 3: Aviso por WhatsApp.
-- Sección 4: Etiqueta imprimible.
-- Sección 5: Reportes básicos.
+**Implementado (v1.1.3):**
+- Sección 3: Aviso por WhatsApp — campos `codigoPaisWhatsapp` y `mensajeWhatsappListo` en `Ajustes`; botón `wa.me` en detalle de orden; `buildWhatsAppUrl` en `lib/utils.ts`.
+- Sección 4: Etiqueta imprimible — ruta `/etiqueta/[id]`, misma autenticación que `/comprobante/[id]`.
+- Sección 5: Reportes básicos — `/dashboard/reportes` con filtro de fechas, tablas, `lib/actions/reportes.ts`.
 
 ### Fuera de alcance (no implementar)
 
@@ -195,13 +195,13 @@ No hace falta un sistema de permisos granular. Basta con estos dos roles.
   - `lib/utils.ts` — helpers **puros**, sin imports de Node.js ni Prisma. Seguro para
     importar desde componentes cliente. Contiene: `ESTADO_LABELS`, `TRANSICIONES`,
     `ESTADO_PAGO_LABELS`, `calcularEstadoPago`, `esEstadoTerminal`, `ordenEstaAtrasada`,
-    `localeDesdeMoneda`.
+    `localeDesdeMoneda`, `buildWhatsAppUrl`.
   - `lib/format.ts` — funciones de formato y acceso a BD. Empieza con
     `import "server-only"`. Contiene: `getMoneda`, `formatDate`, `formatDateShort`,
     `formatCurrency`. Si un componente cliente intenta importar este módulo, el build
     falla de inmediato con mensaje claro.
   - `lib/actions/` — Server Actions (`"use server"`). Cada archivo agrupa las acciones
-    de una entidad (`ordenes.ts`, `clientes.ts`, `pagos.ts`, etc.).
+    de una entidad (`ordenes.ts`, `clientes.ts`, `pagos.ts`, `ajustes.ts`, `reportes.ts`, etc.).
   - No mezclar: **nunca** importes `prisma` desde un archivo que pueda ser incluido en
     el bundle del navegador.
 - Textos de interfaz en español.
